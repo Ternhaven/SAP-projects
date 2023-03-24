@@ -1,0 +1,21 @@
+REPORT z_remind_break.
+
+* Define a global variable to keep track of time elapsed
+DATA: gv_elapsed_time TYPE i.
+
+* Define constants for break interval and notification message
+CONSTANTS: gc_break_interval TYPE i VALUE 5,
+           gc_notification_msg TYPE string VALUE 'Time for a break!'.
+
+* Start an infinite loop to check the elapsed time and remind to take a break
+DO.
+  * Check the elapsed time between breaks
+  IF gv_elapsed_time MOD (gc_break_interval * 60) = 0.
+    * Notify to take a break
+    MESSAGE gc_notification_msg TYPE 'I'.
+  ENDIF.
+
+  * Wait for 1 minute before checking the time again
+  WAIT UP TO 1 SECONDS.
+  ADD 1 TO gv_elapsed_time.
+ENDDO.
