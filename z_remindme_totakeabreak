@@ -5,7 +5,7 @@ DATA: gv_elapsed_time TYPE i.
 
 * Define constants for break interval and notification message
 CONSTANTS: gc_break_interval TYPE i VALUE 5,
-           gc_notification_msg TYPE string VALUE 'Time for a break!'.
+           gc_notification_msg TYPE string VALUE 'Time for a break! Start jumping up and down '.
 
 * Start an infinite loop to check the elapsed time and remind to take a break
 DO.
