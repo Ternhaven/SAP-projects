@@ -1,0 +1,63 @@
+REPORT z_send_but050_to_mc.
+
+DATA: lt_but050     TYPE TABLE OF but050,
+      ls_but050     TYPE but050,
+      lo_http_client TYPE REF TO if_http_client,
+      lv_json        TYPE string,
+      lv_token       TYPE string,
+      lv_url         TYPE string VALUE 'https://your.salesforce.marketingcloud.api/endpoint',
+      lv_timestamp   TYPE timestamp.
+
+" Hämta poster från senaste 24 timmarna
+lv_timestamp = cl_abap_context_info=>get_system_time( ) - 86400.
+
+SELECT * FROM but050
+  INTO TABLE lt_but050
+  WHERE aedtm >= lv_timestamp.
+
+IF sy-subrc <> 0.
+  WRITE: 'Inga ändringar hittades i BUT050 senaste 24h.'.
+  EXIT.
+ENDIF.
+
+" Konvertera till JSON
+DATA(lo_writer) = cl_sxml_string_writer=>create( type = if_sxml=>co_xt_json ).
+CALL TRANSFORMATION id
+  SOURCE but050 = lt_but050
+  RESULT XML lo_writer.
+lv_json = lo_writer->get_output( ).
+
+" Ange bearer-token för OAuth2
+lv_token = 'Bearer your_access_token'.
+
+" Skapa HTTP-klient
+CALL METHOD cl_http_client=>create_by_url
+  EXPORTING
+    url    = lv_url
+  IMPORTING
+    client = lo_http_client
+  EXCEPTIONS
+    OTHERS = 1.
+
+IF sy-subrc <> 0.
+  WRITE: 'Kunde inte skapa HTTP-klient'.
+  EXIT.
+ENDIF.
+
+" Sätt headers
+lo_http_client->request->set_header_field( name = 'Content-Type'  value = 'application/json' ).
+lo_http_client->request->set_header_field( name = 'Authorization' value = lv_token ).
+
+" Skicka POST
+lo_http_client->request->set_method( if_http_request=>co_request_method_post ).
+lo_http_client->request->set_cdata( lv_json ).
+
+CALL METHOD lo_http_client->send.
+CALL METHOD lo_http_client->receive.
+
+" Kontrollera svar
+DATA(lv_status) = lo_http_client->response->get_status( ).
+DATA(lv_resp)   = lo_http_client->response->get_cdata( ).
+
+WRITE: 'HTTP Status:', lv_status.
+WRITE: / 'Respons:', lv_resp.
